@@ -1,0 +1,174 @@
+:root {
+    --font-size-3xl: 11vh;
+    --font-size-2xl: 8.5vh;
+    --font-size-xl: 7vh;
+    --font-size-l: 4vh;
+    --font-size-m: 2.5vh;
+    --font-size-s: 1.5vh;
+    --font-size-xs: 0.75vh;
+}
+
+.hidden {
+    display: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #202020;
+    color: #e0e0e0;
+    font-family: "New Amsterdam", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    font-size: var(--font-size-m);
+    line-height: var(--font-size-l);
+    text-align: center;
+}
+
+input {
+    background-color: #202020;
+    border: 1px solid #a0a0a0;
+    color: #e0e0e0;
+    width: 80%;
+    height: var(--font-size-l);
+    font-size: var(--font-size-m);
+    line-height: var(--font-size-l);
+    text-align: center;
+}
+
+input[type="file"] {
+    border: none;
+}
+
+.scene {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+#access {
+    z-index: 10;
+    background-color: #202020;
+}
+
+#amount {
+    background-color: #101010;
+    width: 100%;
+    height: 5%;
+    font-size: 4vh;
+    text-align: center;
+    line-height: 5vh;
+}
+
+#image {
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    width: 100%;
+    height: 50%;
+    text-align: center;
+}
+
+#solution {
+    width: 100%;
+    height: 45%;
+    text-align: center;
+    font-size: 20vh;
+    border: none;
+    background-color: #101010;
+}
+
+#solution:focus {
+    outline: none;
+}
+
+.title {
+    width: 100%;
+    text-align: center;
+    font-size: 10vh;
+    margin-top: 30vh;
+    height: 15vh;
+    line-height: 15vh;
+}
+
+#apikey {
+    width: 80vw;
+    height: 10vh;
+    font-size: 10vh;
+    text-align: center;
+}
+
+.header {
+    background: linear-gradient(to top, #303030, #101010);
+    width: 100%;
+    text-align: center;
+    font-size: 10vh;
+    height: 15vh;
+    line-height: 15vh;
+    overflow: hidden;
+}
+
+select {
+    padding: .4vh;
+    background-color: #202020;
+    color: #dfdfdf;
+    font-size: var(--font-size-s);
+    font-family: "Teko", sans-serif;
+    border: 1px solid #808080;
+    border-radius: 5px;
+}
+
+select:hover {
+    cursor: pointer;
+    background-color: #303030;
+}
+
+.field-name {
+    font-size: var(--font-size-l);
+    line-height: var(--font-size-l);
+    margin-top: 1vh;
+}
+
+hr.section-delimiter {
+    border-color: #303030;
+    margin: 1vh 0 0 0;
+}
+
+hr.top.section-delimiter {
+    margin: 0;
+}
+
+div.progress {
+    margin-left: 10vw;
+    margin-top: 5vh;
+    width: 80vw;
+    height: 10vh;
+    background-color: #1a1a1a;
+    display: block;
+    border: 5px solid #303030;
+    overflow: hidden;
+    position: absolute;
+    cursor: pointer;
+}
+
+div.progress_inner {
+    position: absolute;
+    width: 0%;
+    height: 100%;
+    background-color: #808080;
+    transition: 1s;
+    transition-timing-function: linear;
+    z-index: 2;
+}
+
+div.progress_text {
+    height: 100%;
+    width: 100%;
+    font-size: var(--font-size-xl);
+    line-height: 10vh;
+    position: absolute;
+    z-index: 3;
+}

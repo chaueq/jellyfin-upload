@@ -1,0 +1,21 @@
+[package]
+name = "jellyfin-upload"
+version = "1.0.12"
+edition = "2021"
+authors = ["chaueq"]
+description = "File upload server for jellyfin"
+license = "MIT"
+
+[dependencies]
+signal-hook = "^0.3.17"
+sha3 = "^0.10.8"
+regex = "^1.11.1"
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/jellyfin-upload", dest = "/usr/bin/jellyfin-upload", mode = "755" },
+    { source = "html/index.html", dest = "/var/lib/jellyfin-upload/index.html", mode = "644" },
+    { source = "html/index.css", dest = "/var/lib/jellyfin-upload/index.css", mode = "644" },
+    { source = "html/index.js", dest = "/var/lib/jellyfin-upload/index.js", mode = "644" },
+    { source = "systemd/jellyfin-upload.service", dest = "/var/lib/jellyfin-upload/index.js", mode = "640" },
+]
