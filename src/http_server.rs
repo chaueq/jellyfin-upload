@@ -1,8 +1,9 @@
-use std::{collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream}, sync::mpsc::channel, thread::{self, sleep}, time::Duration};
+use std::{collections::HashMap, io::{BufRead, BufReader, Read, Write}, net::{TcpListener, TcpStream}, sync::mpsc::channel, thread::{self, sleep}, time::Duration};
 
 use crate::{config::{Config, ProgramFile}, http_handler, keystore::{self, Keystore, AUTH_HEADER}, module::{Module, ModuleMgmtSignal}};
 
-const STACK_SIZE: usize = http_handler::BUFFER_SIZE * 2;
+const MAX_UPLOAD_SIZE: usize = 104857600; //10 MB
+const STACK_SIZE: usize = MAX_UPLOAD_SIZE * 3;
 
 pub fn start(config: Config) -> Module {
     let (mgmt_sender, mgmt_receiver) = channel::<ModuleMgmtSignal>();
@@ -33,7 +34,7 @@ pub fn start(config: Config) -> Module {
                     }
                 }
             }
-            else if let Ok((stream, _)) = listener.accept() {
+            else if let Ok((mut stream, _)) = listener.accept() {
                 let config = config.clone();
                 let default_headers = default_headers.clone();
                 let keystore = keystore.clone();
@@ -41,13 +42,13 @@ pub fn start(config: Config) -> Module {
                 .stack_size(STACK_SIZE)
                 .spawn(move || {
 
-                    let mut resp: HttpResponse = match parse_http_request(stream) {
-                            Ok(request) => {
+                    let mut resp: HttpResponse = match parse_http_request(&mut stream) {
+                            Some(request) => {
                                 match request.method {
                                     HttpMethod::GET => {
                                         http_handler::serve_file(request, &config)
                                     }
-                                    HttpMethod::POST => {
+                                    HttpMethod::POST | HttpMethod::PUT => {
                                         match request.headers.get(AUTH_HEADER) {
                                             Some(key) => {
                                                 match keystore.authorize(key, keystore::Permission::Upload) {
@@ -55,13 +56,13 @@ pub fn start(config: Config) -> Module {
                                                         http_handler::upload_file(request, &config)
                                                     }
                                                     false => {
-                                                        HttpResponse::minimal(403, request.stream)
+                                                        HttpResponse::minimal(403)
                                                     }
                                                 }
 
                                             }
                                             None => {
-                                                HttpResponse::minimal(401, request.stream)
+                                                HttpResponse::minimal(401)
                                             }
                                         }
                                     }
@@ -74,18 +75,16 @@ pub fn start(config: Config) -> Module {
                                         HttpResponse {
                                             status: 204,
                                             headers,
-                                            body: None,
-                                            stream: request.stream
+                                            body: None
                                         }
                                     },
                                     _ => {
-                                        HttpResponse::minimal(405, request.stream)
+                                        HttpResponse::minimal(405)
                                     }
                                 }                            
                             },
-                            Err(stream) => {
-                                println!("ERROR: Coulnd't get TcpStream");
-                                HttpResponse::minimal(400, stream)
+                            None => {
+                                HttpResponse::minimal(400)
                             }
                         };
 
@@ -94,7 +93,7 @@ pub fn start(config: Config) -> Module {
                         }
 
                         
-                        send_http_response(resp);
+                        send_http_response(resp, &mut stream);
                 }).unwrap();
             }
             else {
@@ -106,8 +105,8 @@ pub fn start(config: Config) -> Module {
     Module::new(handle.unwrap(), mgmt_sender)
 }
 
-fn parse_http_request(mut stream: TcpStream) -> Result<HttpRequest, TcpStream> {
-    let mut reader: BufReader<&mut TcpStream> = BufReader::with_capacity(http_handler::BUFFER_SIZE,&mut stream);
+fn parse_http_request(mut stream: &mut TcpStream) -> Option<HttpRequest> {
+    let mut reader: BufReader<&mut TcpStream> = BufReader::with_capacity(MAX_UPLOAD_SIZE,&mut stream);
     let mut headers: HashMap<String, String> = HashMap::new();
     let mut first_line = String::new();
     
@@ -115,7 +114,7 @@ fn parse_http_request(mut stream: TcpStream) -> Result<HttpRequest, TcpStream> {
         let mut line = String::new();
         match reader.read_line(&mut line) {
             Ok(_) => {},
-            Err(_) => {return Err(stream);}
+            Err(_) => {return None;}
         };
 
         line = match line.strip_suffix("\r\n") {
@@ -139,16 +138,37 @@ fn parse_http_request(mut stream: TcpStream) -> Result<HttpRequest, TcpStream> {
         }
     }
 
-    
+    let body = match &headers.get("content-length") {
+        Some(len) => {
+            let len = match len.parse::<usize>() {
+                Ok(len) => {
+                    if len > MAX_UPLOAD_SIZE {
+                        return None;
+                    }
+                    len
+                }
+                Err(_) => {return None;}
+            };
+            let mut body_buf = vec![0; len];
+            match reader.read_exact(&mut body_buf) {
+                Ok(_) => {
+                    Some(body_buf)
+                }
+                Err(_) => {return None;}
+            }
+        },
+        None => {None}
+    };
+
     let request_components: Vec<_> = first_line.split_ascii_whitespace().collect();
     
     if request_components.len() < 2 {
-        return Err(stream);
+        return None;
     }
     
     println!("{}\t{}", request_components[0], request_components[1]);
 
-    Ok(HttpRequest {
+    Some(HttpRequest {
         method: match request_components[0] {
             "GET" => HttpMethod::GET,
             "POST" => HttpMethod::POST,
@@ -162,12 +182,12 @@ fn parse_http_request(mut stream: TcpStream) -> Result<HttpRequest, TcpStream> {
             _ => HttpMethod::Invalid
         },
         path: request_components[1].to_string(),
-        stream,
-        headers
+        headers,
+        body
     })
 }
 
-fn send_http_response(mut response: HttpResponse) {
+fn send_http_response(response: HttpResponse, stream: &mut TcpStream) {
     let mut r = String::new();
     let status_line = "HTTP/1.1 ".to_owned() + match &response.status {
         100 => "100 Continue",
@@ -279,7 +299,7 @@ fn send_http_response(mut response: HttpResponse) {
     r.push_str("\r\n");
     r.push_str(&body);
 
-    response.stream.write_all(r.as_bytes()).unwrap();
+    stream.write_all(r.as_bytes()).unwrap();
 }
 
 #[derive(PartialEq)]
@@ -300,28 +320,26 @@ pub struct HttpRequest {
     pub method: HttpMethod,
     pub path: String,
     pub headers: HashMap<String, String>,
-    pub stream: TcpStream
+    pub body: Option<Vec<u8>>
 }
 
 pub struct HttpResponse {
     pub status: u16,
     pub headers: HashMap<String, String>,
     pub body: Option<String>,
-    pub stream: TcpStream
 }
 
 impl HttpResponse {
-    pub fn minimal(status: u16, stream: TcpStream) -> Self {
+    pub fn minimal(status: u16) -> Self {
         Self {
             status,
             headers: HashMap::<String,String>::new(),
-            body: None,
-            stream
+            body: None
         }
     }
 
-    pub fn normal(body: String, stream: TcpStream) -> Self {
-        let mut x = Self::minimal(200, stream);
+    pub fn normal(body: String) -> Self {
+        let mut x = Self::minimal(200);
         x.body = Some(body);
         x
     }

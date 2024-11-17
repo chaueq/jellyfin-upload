@@ -12,29 +12,52 @@ document.getElementById('apikey').addEventListener('keypress', (e) => {
     }
 });
 
-document.getElementById('upload').addEventListener('click', (e) => {
-    console.log('Sending file now...');
-    const xhr = new XMLHttpRequest();
+document.getElementById('upload').addEventListener('click', async (e) => {
+    const text = document.querySelector('#upload>div.progress_text');
+    if(text.innerText != "UPLOAD" && text.innerText != "UPLOADING") {
+        window.location.reload();
+        return;
+    }
+    else if(text.innerText == "UPLOADING") {
+        return;
+    }
+    text.innerText = 'UPLOADING';
 
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == XMLHttpRequest.DONE) {
-            window.location.reload();
+    const file = document.getElementById('file').files[0];
+    const chunk_size = 104857600; //10 MB
+    const chunks = Math.ceil(file.size/chunk_size);
+    
+    for(let i = 0; i < chunks; ++i) {
+        const offset = i * chunk_size;
+        const data = file.slice(offset, offset + chunk_size);
+        
+        const resp = await fetch(window.location.href, {
+            method: i == 0 ? 'PUT' : 'POST',
+            headers: {
+                'content-type': 'application/octet-stream',
+                'x-folder': document.getElementById('folder').value,
+                'x-filename': document.getElementById('name').value,
+                'x-apikey': getApiKey()
+            },
+            body: data
+        });
+
+        if(resp.ok) {
+            const done = (i+1) / chunks;
+            setProgress(done * 100).then(((done) => {
+                const text = document.querySelector('#upload>div.progress_text');
+                if(done == 1) {
+                    text.innerText = 'DONE';
+                    text.classList.add('success');
+                }
+            }).bind(null, done));
+        }
+        else {
+            const text = document.querySelector('#upload>div.progress_text');
+            text.innerText = 'FAILED';
+            text.classList.add('fail');
         }
     }
-
-    xhr.upload.onprogress = (e) => {
-        console.log(e);
-        const prcnt = (e.loaded / e.total) * 100;
-        setProgress(prcnt);
-    }
-
-    xhr.open('POST', window.location.href);
-    xhr.setRequestHeader("Content-Type", "application/octet-stream");
-    xhr.setRequestHeader('x-folder', document.getElementById('folder').value);
-    xhr.setRequestHeader('x-filename', document.getElementById('name').value);
-    xhr.setRequestHeader('x-apikey', getApiKey());
-
-    xhr.send(document.getElementById('file').files[0]);
 })
 
 function getApiKey() {

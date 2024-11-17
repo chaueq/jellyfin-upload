@@ -172,3 +172,11 @@ div.progress_text {
     position: absolute;
     z-index: 3;
 }
+
+.fail {
+    color: rgb(200, 60, 60);
+}
+
+.success {
+    color: rgb(60, 200, 60);
+}
