@@ -112,10 +112,11 @@ input[type="file"] {
 }
 
 select {
+    margin: .4vh;
     padding: .4vh;
     background-color: #202020;
     color: #dfdfdf;
-    font-size: var(--font-size-s);
+    font-size: var(--font-size-m);
     font-family: "Teko", sans-serif;
     border: 1px solid #808080;
     border-radius: 5px;
@@ -129,7 +130,8 @@ select:hover {
 .field-name {
     font-size: var(--font-size-l);
     line-height: var(--font-size-l);
-    margin-top: 1vh;
+    margin-top: var(--font-size-2xl);
+    margin-bottom: var(--font-size-m);
 }
 
 hr.section-delimiter {
@@ -179,4 +181,20 @@ div.progress_text {
 
 .success {
     color: rgb(60, 200, 60);
+}
+
+#name {
+    border-width: 0 0 1px 0;
+}
+
+.btn {
+    cursor: pointer;
+    margin: .4vh;
+    padding: .4vh;
+    background-color: #202020;
+    color: #dfdfdf;
+    font-size: var(--font-size-m);
+    font-family: "Teko", sans-serif;
+    border: 1px solid #808080;
+    border-radius: 5px;
 }

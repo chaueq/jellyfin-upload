@@ -12,6 +12,13 @@ document.getElementById('apikey').addEventListener('keypress', (e) => {
     }
 });
 
+document.getElementById('file').addEventListener('change', (e) => {
+    const name = document.getElementById('name');
+    if(name.value.length == 0) {
+        name.value = e.target.files[0].name;
+    }
+});
+
 document.getElementById('upload').addEventListener('click', async (e) => {
     const text = document.querySelector('#upload>div.progress_text');
     if(text.innerText != "UPLOAD" && text.innerText != "UPLOADING") {

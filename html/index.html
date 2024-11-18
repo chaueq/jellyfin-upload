@@ -18,20 +18,12 @@
         <select id="folder">
             <option value="videos">videos</option>
             <option value="audio">audio</option>
-        </select>
-
-        <hr class="section-delimiter">
-        
-        <div class="field-name">Name</div>
-        <input type="text" id="name">
-        
-        <hr class="section-delimiter">
-        
+        </select>        
         <div class="field-name">File</div>
-        <input type="file" id="file">
-        
-        <hr class="section-delimiter">
-        
+        <input name="file" type="file" id="file" class="hidden">
+        <label id="file_label" class="btn" for="file">Choose file from disk</label>
+        <div class="field-name">Name</div>
+        <input type="text" id="name"> 
         <div class="progress" id="upload">
             <div class="progress_text">UPLOAD</div>
             <div class="progress_inner"></div>
