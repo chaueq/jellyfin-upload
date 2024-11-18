@@ -56,6 +56,10 @@ document.getElementById('upload').addEventListener('click', async (e) => {
                 if(done == 1) {
                     text.innerText = 'DONE';
                     text.classList.add('success');
+
+                    if(document.querySelector('#upload>.progress_text').innerText == 'DONE') {
+                        setTimeout(() => {window.location.reload()}, 10000);
+                    }
                 }
             }).bind(null, done));
         }
