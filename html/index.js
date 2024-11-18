@@ -24,7 +24,7 @@ document.getElementById('upload').addEventListener('click', async (e) => {
     text.innerText = 'UPLOADING';
 
     const file = document.getElementById('file').files[0];
-    const chunk_size = 104857600; //10 MB
+    const chunk_size = 104857600; //100 MB
     const chunks = Math.ceil(file.size/chunk_size);
     
     for(let i = 0; i < chunks; ++i) {
