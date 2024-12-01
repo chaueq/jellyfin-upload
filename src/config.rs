@@ -1,4 +1,4 @@
-use std::{env, fs::File, io::Read};
+use std::{collections::HashMap, env, fs::File, io::{BufRead, BufReader, Read}};
 
 const CONTENT_FOLDER: &str = "/var/lib/jellyfin-upload/";
 
@@ -8,7 +8,8 @@ pub struct Config {
     directory: String,
     content: String,
     uid: u32,
-    gid: u32
+    gid: u32,
+    collections: HashMap<String, Collection>
 }
 
 impl Config {
@@ -72,13 +73,19 @@ impl Config {
             result
         };
 
-        Self {
+        let collections = HashMap::new();
+
+        let mut c = Self {
             net_address,
             directory,
             content,
             uid,
-            gid
-        }
+            gid,
+            collections
+        };
+
+        c.update_collections();
+        c
     }
 
     pub fn get_path(&self, file: ProgramFile) -> String {
@@ -87,6 +94,7 @@ impl Config {
             ProgramFile::IndexJS => {CONTENT_FOLDER.to_owned() + "index.js"}
             ProgramFile::IndexHTML => {CONTENT_FOLDER.to_owned() + "index.html"}
             ProgramFile::Keystore => {self.directory.clone() + "keystore.csv"}
+            ProgramFile::Collections => {self.directory.clone() + "collections.csv"}
             ProgramFile::Content => {self.content.clone()}
         }
     }
@@ -102,6 +110,38 @@ impl Config {
     pub fn get_uid(&self) -> u32 {
         self.uid
     }
+
+    pub fn get_collection_folder(&self, val: &String) -> Option<String> {
+        if let Some(c) = self.collections.get(val) {
+            return Some(c.path.clone());
+        }
+        None
+    }
+
+    pub fn update_collections(&mut self) {
+        if let Ok(mut f) = File::open(self.get_path(ProgramFile::Collections)) {
+            let mut cs: HashMap<String, Collection> = HashMap::new();
+            let reader: BufReader<&mut File> = BufReader::new(&mut f);
+            for line in reader.lines() {
+                let line = line.unwrap();
+                let parts: Vec<String> = line.split('|').map(|x|x.to_string()).collect();
+                let c = Collection {
+                    display: parts[0].clone(),
+                    path: parts[2].clone()
+                };
+                cs.insert(parts[1].clone(), c);
+            }
+            self.collections = cs;
+        }
+    }
+
+    pub fn get_collections(&self) -> Vec<(String, String)> {
+        let mut result = Vec::new();
+        for c in &self.collections {
+            result.push((c.1.display.clone(), c.0.clone()));
+        }
+        result
+    }
 }
 
 pub enum ProgramFile {
@@ -109,5 +149,12 @@ pub enum ProgramFile {
     IndexJS,
     IndexCSS,
     Keystore,
-    Content
+    Content,
+    Collections
+}
+
+#[derive(Debug, Clone)]
+pub struct Collection {
+    pub(crate) display: String,
+    pub(crate) path: String,
 }

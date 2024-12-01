@@ -1,6 +1,10 @@
 if(getApiKey() === null) {
     document.getElementById('access').classList.remove('hidden');
 }
+else {
+    addCollections();
+}
+
 
 document.getElementById('apikey').addEventListener('keypress', (e) => {
     if(e.key === 'Enter') {
@@ -8,6 +12,7 @@ document.getElementById('apikey').addEventListener('keypress', (e) => {
         if(key.length > 0) {
             localStorage.setItem('apikey', key);
             document.getElementById('access').classList.add('hidden');
+            addCollections();
         }
     }
 });
@@ -16,6 +21,7 @@ document.getElementById('file').addEventListener('change', (e) => {
     const name = document.getElementById('name');
     if(name.value.length == 0) {
         name.value = e.target.files[0].name;
+        document.getElementById('file_label').innerText = e.target.files[0].name;
     }
 });
 
@@ -31,7 +37,7 @@ document.getElementById('upload').addEventListener('click', async (e) => {
     text.innerText = 'UPLOADING';
 
     const file = document.getElementById('file').files[0];
-    const chunk_size = 104857600; //100 MB
+    const chunk_size = 94371840; //90 MB (used to be 100 but 90 is safer for free cloudflare limitations)
     const chunks = Math.ceil(file.size/chunk_size);
     
     for(let i = 0; i < chunks; ++i) {
@@ -42,7 +48,7 @@ document.getElementById('upload').addEventListener('click', async (e) => {
             method: i == 0 ? 'PUT' : 'POST',
             headers: {
                 'content-type': 'application/octet-stream',
-                'x-folder': document.getElementById('folder').value,
+                'x-collection': document.getElementById('collection').value,
                 'x-filename': document.getElementById('name').value,
                 'x-apikey': getApiKey()
             },
@@ -109,4 +115,23 @@ function whichTransitionEvent(){
             return transitions[t];
         }
     }
+}
+
+function addCollections() {
+    fetch('/collections', {
+        headers: {
+            'x-apikey': getApiKey()
+        }
+    }).then(async (resp) => {
+        if(resp.ok) {
+            const sel = document.getElementById('collection');
+            const pairs = await resp.json();
+            for(pair of pairs) {
+                let option = document.createElement('option');
+                option.innerText = pair[0];
+                option.value = pair[1];
+                sel.appendChild(option);
+            }
+        }
+    });
 }

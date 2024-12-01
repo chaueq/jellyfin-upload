@@ -1,5 +1,7 @@
 use std::{fs::{File, OpenOptions}, io::{ Read, Write}, os::unix::fs::chown};
 
+use serde_json::json;
+
 use crate::{config::{Config, ProgramFile}, http_server::{HttpMethod, HttpRequest, HttpResponse}};
 
 pub fn serve_file(req: HttpRequest, config: &Config) -> HttpResponse {
@@ -40,31 +42,38 @@ pub fn serve_file(req: HttpRequest, config: &Config) -> HttpResponse {
 }
 
 pub fn upload_file(req: HttpRequest, config: &Config) -> HttpResponse {
-    if let Some(folder) = req.headers.get("x-folder") {
-        let folder = folder.replace("/", "");
-        if let Some(filename) = req.headers.get("x-filename") {
-            let filename = filename.replace("/", "");
-            let path = config.get_path(ProgramFile::Content) + &folder + "/" + &filename;
-            match OpenOptions::new().create(true).truncate(req.method == HttpMethod::PUT).append(req.method == HttpMethod::POST).write(true).open(&path) {
-                Ok(mut file) => {
-                    if let Some(body) = req.body {
-                        match file.write_all(&body) {
-                            Ok(_) => {
-                                drop(file);
-                                let _ = chown(path, Some(config.get_uid()), Some(config.get_gid()));
-                                return HttpResponse::minimal(204);
+    if let Some(collection) = req.headers.get("x-collection") {
+        let collection = collection.replace("/", "");
+        if let Some(folder) = config.get_collection_folder(&collection) {
+            if let Some(filename) = req.headers.get("x-filename") {
+                let filename = filename.replace("/", "");
+                let path = config.get_path(ProgramFile::Content) + &folder + "/" + &filename;
+                match OpenOptions::new().create(true).truncate(req.method == HttpMethod::PUT).append(req.method == HttpMethod::POST).write(true).open(&path) {
+                    Ok(mut file) => {
+                        if let Some(body) = req.body {
+                            match file.write_all(&body) {
+                                Ok(_) => {
+                                    drop(file);
+                                    let _ = chown(path, Some(config.get_uid()), Some(config.get_gid()));
+                                    return HttpResponse::minimal(204);
+                                }
+                                Err(_) => {return HttpResponse::minimal(500);}
                             }
-                            Err(_) => {return HttpResponse::minimal(500);}
                         }
                     }
-                }
-                Err(_) => {
-                    println!("ERROR: Failed to open file {}", path);
-                    return HttpResponse::minimal(500);
+                    Err(_) => {
+                        println!("ERROR: Failed to open file {}", path);
+                        return HttpResponse::minimal(500);
+                    }
                 }
             }
         }
     }
     
     HttpResponse::minimal(400)
+}
+
+pub fn collections(config: &Config) -> HttpResponse {
+    let pairs = config.get_collections();
+    HttpResponse::normal(json!(pairs).to_string())
 }

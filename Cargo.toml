@@ -1,6 +1,6 @@
 [package]
 name = "jellyfin-upload"
-version = "1.1.13"
+version = "1.2.4"
 edition = "2021"
 authors = ["chaueq"]
 description = "File upload server for jellyfin"
@@ -10,6 +10,7 @@ license = "MIT"
 signal-hook = "^0.3.17"
 sha3 = "^0.10.8"
 regex = "^1.11.1"
+serde_json = "^1.0.133"
 
 [package.metadata.generate-rpm]
 assets = [

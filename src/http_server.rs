@@ -5,7 +5,7 @@ use crate::{config::{Config, ProgramFile}, http_handler, keystore::{self, Keysto
 const MAX_UPLOAD_SIZE: usize = 104857600; //100 MB
 const STACK_SIZE: usize = MAX_UPLOAD_SIZE * 3;
 
-pub fn start(config: Config) -> Module {
+pub fn start(mut config: Config) -> Module {
     let (mgmt_sender, mgmt_receiver) = channel::<ModuleMgmtSignal>();
 
     let handle = thread::Builder::new()
@@ -31,6 +31,7 @@ pub fn start(config: Config) -> Module {
                     }
                     ModuleMgmtSignal::Refresh => {
                         keystore = Keystore::from_file(&config.get_path(ProgramFile::Keystore));
+                        config.update_collections();
                     }
                 }
             }
@@ -46,7 +47,27 @@ pub fn start(config: Config) -> Module {
                             Some(request) => {
                                 match request.method {
                                     HttpMethod::GET => {
-                                        http_handler::serve_file(request, &config)
+                                        match request.path.as_str() {
+                                            "/collections" => {
+                                                match request.headers.get(AUTH_HEADER) {
+                                                    Some(key) => {
+                                                        match keystore.authorize(key, keystore::Permission::Upload) {
+                                                            true => {
+                                                                http_handler::collections(&config)
+                                                            }
+                                                            false => {
+                                                                HttpResponse::minimal(403)
+                                                            }
+                                                        }
+        
+                                                    }
+                                                    None => {
+                                                        HttpResponse::minimal(401)
+                                                    }
+                                                }
+                                            }
+                                            _ => {http_handler::serve_file(request, &config)}
+                                        }
                                     }
                                     HttpMethod::POST | HttpMethod::PUT => {
                                         match request.headers.get(AUTH_HEADER) {

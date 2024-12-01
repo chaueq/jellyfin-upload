@@ -3,6 +3,8 @@ Description=Jellyfin Upload Server
 
 [Service]
 Type=simple
+user=jellyfin
+group=jellyfin
 ExecStart=/usr/bin/jellyfin-upload 0.0.0.0:8000 /opt/jellyfin-upload/ /media/
 SendSIGKILL=no
 
