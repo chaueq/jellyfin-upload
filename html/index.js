@@ -133,5 +133,8 @@ function addCollections() {
                 sel.appendChild(option);
             }
         }
+        else if (resp.status == 403 || resp.status == 401) {
+            document.getElementById('access').classList.remove('hidden');
+        }
     });
 }
