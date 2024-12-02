@@ -39,7 +39,7 @@ document.getElementById('upload').addEventListener('click', async (e) => {
     const chunks = Math.ceil(file.size/chunk_size);
     const max_attempts = 5;
     
-    for(let i = 0; i < max_attempts; ++i) {
+    for(let i = 0; i < chunks; ++i) {
         const offset = i * chunk_size;
         const data = file.slice(offset, offset + chunk_size);
         
