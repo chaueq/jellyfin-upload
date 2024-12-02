@@ -19,8 +19,11 @@ document.getElementById('apikey').addEventListener('keypress', (e) => {
 
 document.getElementById('file').addEventListener('change', (e) => {
     const name = document.getElementById('name');
+    const text = document.querySelector('#upload>div.progress_text');
+    setProgress(0);
     name.value = e.target.files[0].name;
     document.getElementById('file_label').innerText = e.target.files[0].name;
+    text.innerText = 'UPLOAD';
 });
 
 document.getElementById('upload').addEventListener('click', async (e) => {
@@ -29,13 +32,13 @@ document.getElementById('upload').addEventListener('click', async (e) => {
         window.location.reload();
         return;
     }
-    else if(text.innerText == "UPLOADING") {
+    else if(text.innerText.includes('UPLOADING')) {
         return;
     }
     text.innerText = 'UPLOADING';
 
     const file = document.getElementById('file').files[0];
-    const chunk_size = 94371840; //90 MB (used to be 100 but 90 is safer for free cloudflare limitations)
+    const chunk_size = 10485760; //10 MB (used to be 100, then 90 but 10 is better for transfer stability)
     const chunks = Math.ceil(file.size/chunk_size);
     const max_attempts = 5;
     
@@ -63,10 +66,6 @@ document.getElementById('upload').addEventListener('click', async (e) => {
                         if(done == 1) {
                             text.innerText = 'DONE';
                             text.classList.add('success');
-                            
-                            if(document.querySelector('#upload>.progress_text').innerText == 'DONE') {
-                                setTimeout(() => {window.location.reload()}, 10000);
-                            }
                         }
                     }).bind(null, done));
                     break;
@@ -105,11 +104,18 @@ function getApiKey() {
 }
 
 function setProgress(percentage) {
+    const text = document.querySelector('#upload>div.progress_text');
     const progress = document.querySelector('div.progress_inner');
     const transitionEnd = whichTransitionEvent();
     const movement = new Promise((resolve) => {
         progress.addEventListener(transitionEnd, resolve, false);
     });
+    if(percentage == 0) {
+        text.innerText = 'UPLOAD';
+    }
+    else {
+        text.innerText = 'UPLOADING [' + Math.round(percentage) + ']';
+    }
     progress.style.width = percentage + '%';
     return movement;
 }
