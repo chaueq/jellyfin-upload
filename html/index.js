@@ -44,42 +44,47 @@ document.getElementById('upload').addEventListener('click', async (e) => {
         const data = file.slice(offset, offset + chunk_size);
         
         for(let attempt = 0; attempt < max_attempts; ++attempt) {
-            const resp = await fetch(window.location.href, {
-                method: i == 0 ? 'PUT' : 'POST',
-                headers: {
-                    'content-type': 'application/octet-stream',
-                    'x-collection': document.getElementById('collection').value,
-                    'x-filename': document.getElementById('name').value,
-                    'x-apikey': getApiKey()
-                },
-                body: data
-            });
+            try {
+                const resp = await fetch(window.location.href, {
+                    method: i == 0 ? 'PUT' : 'POST',
+                    headers: {
+                        'content-type': 'application/octet-stream',
+                        'x-collection': document.getElementById('collection').value,
+                        'x-filename': document.getElementById('name').value,
+                        'x-apikey': getApiKey()
+                    },
+                    body: data
+                });
 
-            if(resp.ok) {
-                const done = (i+1) / chunks;
-                setProgress(done * 100).then(((done) => {
-                    const text = document.querySelector('#upload>div.progress_text');
-                    if(done == 1) {
-                        text.innerText = 'DONE';
-                        text.classList.add('success');
-                        
-                        if(document.querySelector('#upload>.progress_text').innerText == 'DONE') {
-                            setTimeout(() => {window.location.reload()}, 10000);
+                if(resp.ok) {
+                    const done = (i+1) / chunks;
+                    setProgress(done * 100).then(((done) => {
+                        const text = document.querySelector('#upload>div.progress_text');
+                        if(done == 1) {
+                            text.innerText = 'DONE';
+                            text.classList.add('success');
+                            
+                            if(document.querySelector('#upload>.progress_text').innerText == 'DONE') {
+                                setTimeout(() => {window.location.reload()}, 10000);
+                            }
                         }
-                    }
-                }).bind(null, done));
-                break;
+                    }).bind(null, done));
+                    break;
+                }
+                else if(attempt == max_attempts-1) {
+                    const text = document.querySelector('#upload>div.progress_text');
+                    text.innerText = 'FAILED';
+                    text.classList.add('fail');
+                }
+                else if(resp.status == 401 || resp.status == 403) {
+                    document.getElementById('access').classList.remove('hidden');
+                    return;
+                }
+                else {
+                    await sleep(Math.pow(4, attempt) * 1000);
+                }
             }
-            else if(attempt == max_attempts-1) {
-                const text = document.querySelector('#upload>div.progress_text');
-                text.innerText = 'FAILED';
-                text.classList.add('fail');
-            }
-            else if(resp.status == 401 || resp.status == 403) {
-                document.getElementById('access').classList.remove('hidden');
-                return;
-            }
-            else {
+            catch(e) {
                 await sleep(Math.pow(4, attempt) * 1000);
             }
         }

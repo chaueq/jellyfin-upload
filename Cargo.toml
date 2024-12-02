@@ -1,6 +1,6 @@
 [package]
 name = "jellyfin-upload"
-version = "1.2.8"
+version = "1.2.9"
 edition = "2021"
 authors = ["chaueq"]
 description = "File upload server for jellyfin"
