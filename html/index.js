@@ -19,10 +19,8 @@ document.getElementById('apikey').addEventListener('keypress', (e) => {
 
 document.getElementById('file').addEventListener('change', (e) => {
     const name = document.getElementById('name');
-    if(name.value.length == 0) {
-        name.value = e.target.files[0].name;
-        document.getElementById('file_label').innerText = e.target.files[0].name;
-    }
+    name.value = e.target.files[0].name;
+    document.getElementById('file_label').innerText = e.target.files[0].name;
 });
 
 document.getElementById('upload').addEventListener('click', async (e) => {
