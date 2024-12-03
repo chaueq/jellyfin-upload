@@ -112,6 +112,7 @@ function setProgress(percentage) {
     });
     if(percentage == 0) {
         text.innerText = 'UPLOAD';
+        text.classList.remove('success', 'fail');
     }
     else {
         text.innerText = 'UPLOADING: ' + Math.round(percentage) + '%';
