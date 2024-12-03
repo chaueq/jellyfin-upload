@@ -35,7 +35,7 @@ document.getElementById('upload').addEventListener('click', async (e) => {
     else if(text.innerText.includes('UPLOADING')) {
         return;
     }
-    text.innerText = 'UPLOADING';
+    text.innerText = 'UPLOADING: 0%';
 
     const file = document.getElementById('file').files[0];
     const chunk_size = 10485760; //10 MB (used to be 100, then 90 but 10 is better for transfer stability)
