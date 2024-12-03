@@ -119,20 +119,28 @@ impl Config {
     }
 
     pub fn update_collections(&mut self) {
-        if let Ok(mut f) = File::open(self.get_path(ProgramFile::Collections)) {
-            let mut cs: HashMap<String, Collection> = HashMap::new();
-            let reader: BufReader<&mut File> = BufReader::new(&mut f);
-            for line in reader.lines() {
-                let line = line.unwrap();
-                let parts: Vec<String> = line.split('|').map(|x|x.to_string()).collect();
-                let c = Collection {
-                    display: parts[0].clone(),
-                    path: parts[2].clone()
-                };
-                cs.insert(parts[1].clone(), c);
+        let mut file = match File::open(self.get_path(ProgramFile::Collections)) {
+            Ok(f) => {f},
+            Err(_) => {
+                File::create(self.get_path(ProgramFile::Collections)).unwrap();
+                File::open(self.get_path(ProgramFile::Collections)).unwrap()
             }
-            self.collections = cs;
+        };
+        let mut cs: HashMap<String, Collection> = HashMap::new();
+        let reader: BufReader<&mut File> = BufReader::new(&mut file);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            if line.starts_with('#') {
+                continue;
+            }
+            let parts: Vec<String> = line.split('|').map(|x|x.to_string()).collect();
+            let c = Collection {
+                display: parts[0].clone(),
+                path: parts[2].clone()
+            };
+            cs.insert(parts[1].clone(), c);
         }
+        self.collections = cs;
     }
 
     pub fn get_collections(&self) -> Vec<(String, String)> {
