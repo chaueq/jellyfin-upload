@@ -2,7 +2,7 @@ use std::{collections::HashMap, io::{BufRead, BufReader, Read, Write}, net::{Tcp
 
 use crate::{config::{Config, ProgramFile}, http_handler, keystore::{self, Keystore, AUTH_HEADER}, module::{Module, ModuleMgmtSignal}};
 
-const MAX_UPLOAD_SIZE: usize = 104857600; //100 MB
+const MAX_UPLOAD_SIZE: usize = 10485760; //10 MB
 const STACK_SIZE: usize = MAX_UPLOAD_SIZE * 3;
 
 pub fn start(mut config: Config) -> Module {
