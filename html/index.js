@@ -114,7 +114,7 @@ function setProgress(percentage) {
         text.innerText = 'UPLOAD';
     }
     else {
-        text.innerText = 'UPLOADING [' + Math.round(percentage) + ']';
+        text.innerText = 'UPLOADING: ' + Math.round(percentage) + '%';
     }
     progress.style.width = percentage + '%';
     return movement;
