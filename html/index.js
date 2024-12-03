@@ -188,16 +188,16 @@ async function updateSpace() {
             space.innerText = bytes + ' B';
         }
         else if (bytes < 1048576) {
-            space.innerText = bytes + ' kB';
+            space.innerText = Math.round(bytes / 1024) + ' kB';
         }
         else if (bytes < 1073741824) {
-            space.innerText = bytes + ' MB';
+            space.innerText = Math.round(bytes / 1048576) + ' MB';
         }
         else if (bytes < 1099511627776) {
-            space.innerText = bytes + ' GB';
+            space.innerText = Math.round(bytes / 1073741824) + ' GB';
         }
         else {
-            space.innerText = bytes + ' TB';
+            space.innerText = Math.round(bytes / 1099511627776) + ' TB';
         }
     }
     else {
