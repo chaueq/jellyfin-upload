@@ -17,6 +17,10 @@ document.getElementById('apikey').addEventListener('keypress', (e) => {
     }
 });
 
+document.getElementById('collection').addEventListener('change', (e) => {
+    updateSpace();
+});
+
 document.getElementById('file').addEventListener('change', (e) => {
     const name = document.getElementById('name');
     const text = document.querySelector('#upload>div.progress_text');
@@ -41,6 +45,7 @@ document.getElementById('upload').addEventListener('click', async (e) => {
     const chunk_size = 10485760; //10 MB (used to be 100, then 90 but 10 is better for transfer stability)
     const chunks = Math.ceil(file.size/chunk_size);
     const max_attempts = 5;
+    const interval = setInterval(updateSpace, 60000);
     
     for(let i = 0; i < chunks; ++i) {
         const offset = i * chunk_size;
@@ -88,6 +93,8 @@ document.getElementById('upload').addEventListener('click', async (e) => {
             }
         }
     }
+
+    clearInterval(interval);
 })
 
 function getApiKey() {
@@ -153,6 +160,7 @@ function addCollections() {
                 option.value = pair[1];
                 sel.appendChild(option);
             }
+            updateSpace();
         }
         else if (resp.status == 403 || resp.status == 401) {
             document.getElementById('access').classList.remove('hidden');
@@ -162,4 +170,37 @@ function addCollections() {
 
 function sleep(time) {
     return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+async function updateSpace() {
+    const space = document.getElementById('space')
+    const resp = await fetch('/space', {
+        method: 'GET',
+        headers: {
+            'x-apikey': getApiKey(),
+            'x-collection': document.getElementById('collection').value
+        }
+    });
+
+    if(resp.ok) {
+        const bytes = parseInt(await resp.text());
+        if (bytes < 1024) {
+            space.innerText = bytes + ' B';
+        }
+        else if (bytes < 1048576) {
+            space.innerText = bytes + ' kB';
+        }
+        else if (bytes < 1073741824) {
+            space.innerText = bytes + ' MB';
+        }
+        else if (bytes < 1099511627776) {
+            space.innerText = bytes + ' GB';
+        }
+        else {
+            space.innerText = bytes + ' TB';
+        }
+    }
+    else {
+        space.innerText = 'Error';
+    }
 }

@@ -130,7 +130,7 @@ select:hover {
 .field-name {
     font-size: var(--font-size-l);
     line-height: var(--font-size-l);
-    margin-top: var(--font-size-2xl);
+    margin-top: 5.5vh;
     margin-bottom: var(--font-size-m);
 }
 

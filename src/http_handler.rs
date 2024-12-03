@@ -89,3 +89,14 @@ pub fn collections(config: &Config) -> HttpResponse {
     let pairs = config.get_collections();
     HttpResponse::normal(json!(pairs).to_string())
 }
+
+pub fn space(req: HttpRequest, config: &Config) -> HttpResponse {
+    if let Some(c) = req.headers.get("x-collection") {
+        if let Some(path) = config.get_collection_folder(c) {
+            if let Ok(bytes) = fs2::free_space(config.get_path(ProgramFile::Content) + path.as_str()) {
+                return HttpResponse::normal(bytes.to_string());
+            }
+        }
+    }
+    HttpResponse::minimal(400)
+}

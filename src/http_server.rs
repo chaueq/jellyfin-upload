@@ -66,6 +66,24 @@ pub fn start(mut config: Config) -> Module {
                                                     }
                                                 }
                                             }
+                                            "/space" => {
+                                                match request.headers.get(AUTH_HEADER) {
+                                                    Some(key) => {
+                                                        match keystore.authorize(key, keystore::Permission::Upload) {
+                                                            true => {
+                                                                http_handler::space(request, &config)
+                                                            }
+                                                            false => {
+                                                                HttpResponse::minimal(403)
+                                                            }
+                                                        }
+        
+                                                    }
+                                                    None => {
+                                                        HttpResponse::minimal(401)
+                                                    }
+                                                }
+                                            }
                                             _ => {http_handler::serve_file(request, &config)}
                                         }
                                     }
