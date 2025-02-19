@@ -154,6 +154,7 @@ function addCollections() {
         if(resp.ok) {
             const sel = document.getElementById('collection');
             const pairs = await resp.json();
+            pairs.sort((a, b) => a[0].localeCompare(b[0]));
             for(pair of pairs) {
                 let option = document.createElement('option');
                 option.innerText = pair[0];
