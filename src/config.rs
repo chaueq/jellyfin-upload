@@ -136,9 +136,9 @@ impl Config {
             let parts: Vec<String> = line.split('|').map(|x|x.to_string()).collect();
             let c = Collection {
                 display: parts[0].clone(),
-                path: parts[2].clone()
+                path: parts[1].clone()
             };
-            cs.insert(parts[1].clone(), c);
+            cs.insert(generate_unique_id(&c), c);
         }
         self.collections = cs;
     }
@@ -165,4 +165,9 @@ pub enum ProgramFile {
 pub struct Collection {
     pub(crate) display: String,
     pub(crate) path: String,
+}
+
+fn generate_unique_id(c: &Collection) -> String {
+    let digest = md5::compute(format!("{} -> {}", c.display, c.path));
+    format!("{:x}", digest)
 }
