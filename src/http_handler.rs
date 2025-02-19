@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::{File, OpenOptions}, io::{ Read, Write}, os::unix::fs::chown};
+use std::{collections::HashMap, fs::{self, File, OpenOptions}, io::{ Read, Write}, os::unix::fs::chown, path::Path};
 
 use serde_json::json;
 
@@ -58,8 +58,30 @@ pub fn upload_file(req: HttpRequest, config: &Config) -> HttpResponse {
         let collection = collection.replace("/", "");
         if let Some(folder) = config.get_collection_folder(&collection) {
             if let Some(filename) = req.headers.get("x-filename") {
-                let filename = filename.replace("/", "");
-                let path = config.get_path(ProgramFile::Content) + &folder + "/" + &filename;
+                let filename = filename.replace("/", "").trim().to_string();
+                let path = {
+                    let prefix = config.get_path(ProgramFile::Content) + &folder + "/";
+                    if let Some(subfolder) = req.headers.get("x-foldername") {
+                        let subfolder = subfolder.replace(".", "").trim().trim_matches('/').to_string();
+                        let path = prefix.clone() + &subfolder + "/";
+                        let path = Path::new(&path);
+                        if !path.exists() {
+                            if fs::create_dir_all(path).is_err() {
+                                return HttpResponse::minimal(500);
+                            }
+                            if r_chown(&folder, &subfolder, &config).is_err() {
+                                return HttpResponse::minimal(500);
+                            }
+                        }
+                        else if !path.is_dir() {
+                            return HttpResponse::minimal(406);
+                        }
+                        prefix + &subfolder + "/" + &filename
+                    }
+                    else {
+                        prefix + &filename
+                    }
+                };
                 match OpenOptions::new().create(true).truncate(req.method == HttpMethod::PUT).append(req.method == HttpMethod::POST).write(true).open(&path) {
                     Ok(mut file) => {
                         if let Some(body) = req.body {
@@ -99,4 +121,18 @@ pub fn space(req: HttpRequest, config: &Config) -> HttpResponse {
         }
     }
     HttpResponse::minimal(400)
+}
+
+fn r_chown(folder: &String, subfolder: &String, config: &Config) -> Result<(), std::io::Error> {
+    let steps: Vec<&str> = subfolder.split('/').collect();
+    let mut current = folder.clone().trim_end_matches('/').to_string();
+    for step in steps {
+        current += "/";
+        current += step;
+        let res = chown(&current, Some(config.get_uid()), Some(config.get_gid()));
+        if res.is_err() {
+            return res;
+        }
+    }
+    Ok(())
 }

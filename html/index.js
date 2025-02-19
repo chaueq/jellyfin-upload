@@ -24,9 +24,18 @@ document.getElementById('collection').addEventListener('change', (e) => {
 document.getElementById('file').addEventListener('change', (e) => {
     const name = document.getElementById('name');
     const text = document.querySelector('#upload>div.progress_text');
+    const label = document.getElementById('name_label');
+    const files = e.target.files;
     setProgress(0);
-    name.value = e.target.files[0].name;
-    document.getElementById('file_label').innerText = e.target.files[0].name;
+    if(files.length > 1) {
+        document.getElementById('file_label').innerText = files.length + ' files';
+        label.innerText = 'Folder Name';
+    }
+    else {
+        name.value = files[0].name;
+        document.getElementById('file_label').innerText = files[0].name;
+        label.innerText = 'File Name';
+    }
     text.innerText = 'UPLOAD';
 });
 
@@ -41,55 +50,79 @@ document.getElementById('upload').addEventListener('click', async (e) => {
     }
     text.innerText = 'UPLOADING: 0%';
 
-    const file = document.getElementById('file').files[0];
+    const files = document.getElementById('file').files;
+    const multiple = files.length > 1;
     const chunk_size = 10485760; //10 MB (used to be 100, then 90 but 10 is better for transfer stability)
-    const chunks = Math.ceil(file.size/chunk_size);
     const max_attempts = 5;
+    let total_chunks = 0;
+    let chunks_uploaded = 0;
+    for(const file of files) {
+        total_chunks += Math.ceil(file.size/chunk_size);
+    }
     const interval = setInterval(updateSpace, 60000);
     
-    for(let i = 0; i < chunks; ++i) {
-        const offset = i * chunk_size;
-        const data = file.slice(offset, offset + chunk_size);
-        
-        for(let attempt = 0; attempt < max_attempts; ++attempt) {
-            try {
-                const resp = await fetch(window.location.href, {
-                    method: i == 0 ? 'PUT' : 'POST',
-                    headers: {
+    for(const file of files) {
+        const chunks = Math.ceil(file.size/chunk_size);
+        for(let i = 0; i < chunks; ++i) {
+            const offset = i * chunk_size;
+            const data = file.slice(offset, offset + chunk_size);
+            
+            for(let attempt = 0; attempt < max_attempts; ++attempt) {
+                try {
+                    let headers = {
                         'content-type': 'application/octet-stream',
                         'x-collection': document.getElementById('collection').value,
-                        'x-filename': document.getElementById('name').value,
+                        'x-filename': multiple 
+                            ? file.name
+                            : document.getElementById('name').value
+                        ,
                         'x-apikey': getApiKey()
-                    },
-                    body: data
-                });
+                    };
 
-                if(resp.ok) {
-                    const done = (i+1) / chunks;
-                    setProgress(done * 100).then(((done) => {
-                        const text = document.querySelector('#upload>div.progress_text');
-                        if(done == 1) {
-                            text.innerText = 'DONE';
-                            text.classList.add('success');
-                        }
-                    }).bind(null, done));
-                    break;
+                    if(headers['x-filename'].length == 0) {
+                        fail();
+                        clearInterval(interval);
+                        return;
+                    }
+
+                    if(multiple && document.getElementById('name').value.length > 0) {
+                        headers['x-foldername'] = document.getElementById('name').value;
+                    }
+
+                    const resp = await fetch(window.location.href, {
+                        method: i == 0 ? 'PUT' : 'POST',
+                        headers,
+                        body: data
+                    });
+
+                    if(resp.ok) {
+                        chunks_uploaded += 1;
+                        const done = chunks_uploaded / total_chunks;
+                        setProgress(done * 100).then(((done) => {
+                            const text = document.querySelector('#upload>div.progress_text');
+                            if(done == 1) {
+                                text.innerText = 'DONE';
+                                text.classList.add('success');
+                            }
+                        }).bind(null, done));
+                        break;
+                    }
+                    else if(attempt == max_attempts-1) {
+                        fail();
+                        clearInterval(interval);
+                        return;
+                    }
+                    else if(resp.status == 401 || resp.status == 403) {
+                        document.getElementById('access').classList.remove('hidden');
+                        return;
+                    }
+                    else {
+                        await sleep(Math.pow(4, attempt) * 1000);
+                    }
                 }
-                else if(attempt == max_attempts-1) {
-                    const text = document.querySelector('#upload>div.progress_text');
-                    text.innerText = 'FAILED';
-                    text.classList.add('fail');
-                }
-                else if(resp.status == 401 || resp.status == 403) {
-                    document.getElementById('access').classList.remove('hidden');
-                    return;
-                }
-                else {
+                catch(e) {
                     await sleep(Math.pow(4, attempt) * 1000);
                 }
-            }
-            catch(e) {
-                await sleep(Math.pow(4, attempt) * 1000);
             }
         }
     }
@@ -204,4 +237,10 @@ async function updateSpace() {
     else {
         space.innerText = 'Error';
     }
+}
+
+function fail() {
+    const text = document.querySelector('#upload>div.progress_text');
+    text.innerText = 'FAILED';
+    text.classList.add('fail');
 }
