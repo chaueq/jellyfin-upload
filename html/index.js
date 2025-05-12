@@ -5,6 +5,7 @@ else {
     addCollections();
 }
 
+const dir_split = /[/\\]/;
 
 document.getElementById('apikey').addEventListener('keypress', (e) => {
     if(e.key === 'Enter') {
@@ -37,6 +38,20 @@ document.getElementById('file').addEventListener('change', (e) => {
         label.innerText = 'File Name';
     }
     text.innerText = 'UPLOAD';
+    document.getElementById('folder_label').classList.add('hidden');
+});
+
+document.getElementById('folder').addEventListener('change', (e) => {
+    const name = document.getElementById('name');
+    const text = document.querySelector('#upload>div.progress_text');
+    const label = document.getElementById('name_label');
+    const files = e.target.files;
+    setProgress(0);
+    name.value = files[0].webkitRelativePath.split(dir_split)[0];
+    document.getElementById('folder_label').innerText = name.value;
+    label.innerText = 'Folder Name';
+    text.innerText = 'UPLOAD';
+    document.getElementById('file_label').classList.add('hidden');
 });
 
 document.getElementById('upload').addEventListener('click', async (e) => {
@@ -50,8 +65,11 @@ document.getElementById('upload').addEventListener('click', async (e) => {
     }
     text.innerText = 'UPLOADING: 0%';
 
-    const files = document.getElementById('file').files;
-    const multiple = files.length > 1;
+    const is_dir = document.getElementById('folder').files.length > 0;
+    const files = is_dir
+        ? document.getElementById('folder').files
+        : document.getElementById('file').files;
+    const multiple = files.length > 1 || is_dir;
     const chunk_size = 10485760; //10 MB (used to be 100, then 90 but 10 is better for transfer stability)
     const max_attempts = 5;
     let total_chunks = 0;
@@ -86,7 +104,17 @@ document.getElementById('upload').addEventListener('click', async (e) => {
                     }
 
                     if(multiple && document.getElementById('name').value.length > 0) {
-                        headers['x-foldername'] = document.getElementById('name').value;
+                        if(is_dir) {
+                            let parts = file.webkitRelativePath.split(dir_split);
+                            if(parts[0] != document.getElementById('name').value) {
+                                parts[0] = document.getElementById('name').value;
+                            }
+                            parts.pop();
+                            headers['x-foldername'] = parts.join('/');
+                        }
+                        else {
+                            headers['x-foldername'] = document.getElementById('name').value;
+                        }
                     }
 
                     const resp = await fetch(window.location.href, {
