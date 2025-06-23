@@ -22,3 +22,12 @@ assets = [
     { source = "html/index.js", dest = "/var/lib/jellyfin-upload/index.js", mode = "644" },
     { source = "systemd/jellyfin-upload.service", dest = "/etc/systemd/system/jellyfin-upload.service", mode = "640" },
 ]
+
+[package.metadata.deb]
+assets = [
+    ["target/release/jellyfin-upload", "usr/bin/jellyfin-upload", "755"],
+    ["html/index.html", "var/lib/jellyfin-upload/index.html", "644"],
+    ["html/index.css", "var/lib/jellyfin-upload/index.css", "644"],
+    ["html/index.js", "var/lib/jellyfin-upload/index.js", "644"],
+    ["systemd/jellyfin-upload.service", "etc/systemd/system/jellyfin-upload.service", "640"],
+]
